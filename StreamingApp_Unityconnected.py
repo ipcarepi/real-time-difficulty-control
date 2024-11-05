@@ -267,7 +267,7 @@ class Application(QtWidgets.QMainWindow):
         self.current_timer()
 
         # Initialize TCP client object
-        self.tcp_client = TCP_Client(host, port)
+        self.tcp_server = TCP_Server(host, port)
 
         # Initialize thread stop event flag
         self.stop_event = threading.Event()
@@ -682,7 +682,7 @@ class Application(QtWidgets.QMainWindow):
         if not self.stop_event.is_set():
             return
         self.stop_event.clear()
-        self.tcp_client = TCP_Client(self.host, self.port)
+        self.tcp_server = TCP_Server(self.host, self.port)
         self.tcp_thread = threading.Thread(target=self.tcp_thread_works)
         self.tcp_thread.start()
 
@@ -696,32 +696,13 @@ class Application(QtWidgets.QMainWindow):
         tobii = Tobii_handler()
         try:
             while not self.stop_event.is_set():
-                data = ','.join(map(str, self.data_for_tcp(tobii)))
-                if self.tcp_client.is_connected:
-                    self.tcp_client.send_msg_to_server(data)
-                else:
-                    if self.tcp_client.connect_to_server() == "EOC":
-                        self.stop_event.set()
+                if self.tcp_server.connect_to_server() == "EOC":
+                    self.stop_event.set()
                 time.sleep(0.00833)
         except Exception as e:
             print(e)
         finally:
-            self.tcp_client.close()
-    
-    def data_for_tcp(self, tobii):
-        data_window = 5
-        eyex = (tobii.gaze_data[0] + tobii.gaze_data[9]) / 2
-        eyey = (tobii.gaze_data[1] + tobii.gaze_data[10]) / 2
-        result = [eyex, eyey]
-        if len(self.eyedata) < data_window:
-            self.eyedata.append([eyex, eyey])
-        else:
-            self.eyedata.pop(0)
-            self.eyedata.append([eyex, eyey])
-            neweyex = sum([point[0] for point in self.eyedata]) / data_window
-            neweyey = sum([point[1] for point in self.eyedata]) / data_window
-            result = [neweyex, neweyey]
-        return result
+            self.tcp_server.close()
 
     def closeEvent(self, event):
         self.worker_E4.stopp()
@@ -786,28 +767,6 @@ class Application(QtWidgets.QMainWindow):
             print(f"Sensor Data saved to {fileName}")
         datafilezip.write(fileName)
         os.remove(f'/python/{fileName}')
-            
-        '''
-        fileName = "E4 ACC data.csv"
-        if fileName:
-            with open(fileName, 'w', newline='') as file:
-                writer = csv.writer(file)
-                
-                # Update headers to include participant name
-                headers = ['Participant Name', 'UNIX Time', 'E4 ACC', 'game started']
-                writer.writerow(headers)
-
-                # Add participant name to each record
-                for i in range(len(self.E4_ACC)):
-                    self.E4_ACC[i] = [self.participant_name] + self.E4_ACC[i] + self.gamestarted
-
-                # Write updated data to CSV
-                for record in self.E4_ACC:
-                    writer.writerow(record)
-            print(f"Sensor Data saved to {fileName}")
-        datafilezip.write(fileName)
-        os.remove(f'/python/{fileName}')
-        '''
             
         fileName = "E4 BVP, IBI data.csv"
         if fileName:
@@ -1258,18 +1217,27 @@ class Tobii_handler():
         return 0
 
 ##########################################################################
-class TCP_Client():
+class TCP_Server():
     def __init__(self, host='127.0.0.1', port=5005):
-        self.is_connected = None
         self.server_address = (host, port)
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect_to_server()
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(self.server_address)
+        self.server_socket.listen(1)
+        self.start_server()
 
-    def connect_to_server(self):
+    def start_server(self):
         try:
-            self.client_socket.connect(self.server_address)
+            self.client_socket, client_address = self.server_socket.accept()
+            while True:
+                    data = self.client_socket.recv(1024)
+                    if data:
+                        message = data.decode('utf-8')
+
+                        # 여기서 추가적으로 받은 데이터를 처리하는 로직을 넣을 수 있음
+                    else:
+                        print("Connection closed by Unity client.")
+                        break
         except Exception as e:
-            self.is_connected = False
             if str(e)[10:15] == "10056":
                 # ERROR CODE [10056]: Forced quit occurred from Unity server.
                 print("Unity server were forced to quit...<Press Enter to Exit>")
@@ -1278,26 +1246,11 @@ class TCP_Client():
                 # ERROR CODE [10061]: Unity server is not available.
                 print("Unity server is not available. Trying to reconnect...")
                 return "TRC"  # Try to ReConnect
-        else:
-            self.is_connected = True
-            self.send_msg_to_server("Connected to the python client.")
-        return "CTS"  # Connected To Server
-
-    def send_msg_to_server(self, msg: str, encode_type='utf-8'):
-        if not self.is_connected:
-            print("The client is not connected to Unity server.")
-            self.is_connected = False
-            return
-        try:
-            self.client_socket.sendall(msg.encode(encode_type))
-        except Exception as e:
-            print(e)
-            self.is_connected = False
-            print("\nTrying to reconnect with Unity server...")
-            self.connect_to_server()
+        finally:
+            self.client_socket.close()
 
     def close(self):
-        self.client_socket.close()
+        self.server_socket.close()
 
 ##########################################################################
 class InitialWindow(QtWidgets.QMainWindow):
