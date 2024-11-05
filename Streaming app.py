@@ -752,6 +752,7 @@ class Application(QtWidgets.QMainWindow):
                 
                 # Update headers to include participant name
                 headers = ['Participant Name']
+                headers += ['UNIX Time']
                 headers += [f'{i}' for i in self.gazedatalist]
                 headers += ['game started']
                 writer.writerow(headers)
@@ -1229,7 +1230,7 @@ class Tobii_handler():
         else:
             self.gaze_points_y.append((self.__gaze_data[1] + self.__gaze_data[10]) / 2)
 
-        if self.gaze_points_x and self.gaze_timestamps[-1] - self.gaze_timestamps[self.dispersionx] > time_window:
+        if len(self.gaze_timestamps) > 0 and self.gaze_points_x and self.gaze_timestamps[-1] - self.gaze_timestamps[self.dispersionx] > time_window:
             self.gaze_points_x.pop(0)
             self.gaze_points_y.pop(0)
             self.dispersionx += 1
