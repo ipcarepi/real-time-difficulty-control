@@ -825,6 +825,7 @@ class Application(QtWidgets.QMainWindow):
                 
                 # Update headers to include participant name
                 headers = ['Participant Name']
+                headers += ['UNIX Time']
                 headers += [f'{i}' for i in self.gazedatalist]
                 headers += ['game started']
                 writer.writerow(headers)
