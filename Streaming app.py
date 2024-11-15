@@ -967,21 +967,8 @@ class Tobii_handler():
         else:
             self.is_ready = True
             self.eye_tracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, self.gaze_data_callback)
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, lambda data: print(f"Gaze data: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_EXTERNAL_SIGNAL, lambda data: print(f"External signal: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_TIME_SYNCHRONIZATION_DATA, lambda data: print(f"time synchronization data: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_STREAM_ERRORS, lambda data: print(f"stream error: \n source : {data.source} \n error : {data.error} \n message : {data.message}"))
-            self.eye_tracker.subscribe_to(tr._EYETRACKER_NOTIFICATIONS, lambda data: print(f"notification: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_EYE_IMAGES, lambda data: print(f"eye image: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_HMD_GAZE_DATA, lambda data: print(f"hmd gaze data: {data}"))
-            #self.eye_tracker.subscribe_to(tr.EYETRACKER_USER_POSITION_GUIDE, lambda data: print(f"user position guide: {data}"))
-            self.eye_tracker.subscribe_to(tr.EYETRACKER_EYE_OPENNESS_DATA, lambda data: print(f"eye openness data: {data}"))
-            
-            print("eye tracker subscribed")
 
     def gaze_data_callback(self, gaze_data):
-        print(f"new data arrived : {gaze_data}")
-
         # Before updating __gaze_data, store its current state as previous
         with self.lock:
             self.__previous_gaze_data = self.__gaze_data.copy()
