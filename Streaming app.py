@@ -1345,7 +1345,7 @@ class E4Streamer(SensorStreamer):
         self._E4_sample_index = None  # The current Moticon timestep being processed (each timestep will send multiple messages)
         self._E4_message_start_time_s = None  # When a Moticon message was first received
         self._E4_timestep_receive_time_s = None  # When the first Moticon message for a Moticon timestep was received
-        self._device_id1 = '6337CD'
+        self._device_id1 = '6251CD'
         self._device_id2 = '1B35CD'
 
         # SELECT DATA TO STREAM
